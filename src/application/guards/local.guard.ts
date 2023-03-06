@@ -26,13 +26,13 @@ export class LocalAuthGuard implements CanActivate {
 
     const dto = new LoginDTO(req.body.email, req.body.password);
 
-    const user = await this.authService.validateUser(dto);
+    const userCompanyAgg = await this.authService.validateUser(dto);
 
-    if (!user) {
+    if (!userCompanyAgg) {
       throw new UnauthorizedException('INVALID_CREDENTIALS');
     }
 
-    req.user = user;
+    req.user = userCompanyAgg;
     return true;
   }
 }

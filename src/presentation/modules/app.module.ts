@@ -8,12 +8,7 @@ import { ExternalModule } from './external.module';
 import { UsersModule } from './user.module';
 
 @Module({
-  imports: [
-    DatabaseModule,
-    ExternalModule,
-    AuthModule,
-    UsersModule,
-  ],
+  imports: [DatabaseModule, ExternalModule, AuthModule, UsersModule],
   providers: [
     {
       provide: APP_FILTER,

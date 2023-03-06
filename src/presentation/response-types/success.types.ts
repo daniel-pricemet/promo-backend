@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { HttpStatus } from '@nestjs/common';
-import { JsonResponse } from 'domain/contracts/json-response.contract';
+import { JsonResponse } from 'domain/interfaces/json-response.interface';
 import messages from 'shared/messages';
 
 export const Ok = (data: any, message?: string): JsonResponse<any, any> => ({

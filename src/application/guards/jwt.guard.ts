@@ -10,13 +10,11 @@ import { UnauthorizedException } from 'application/exceptions/generic/unauthoriz
 import { IDataFetcherProvider } from 'domain/contracts/data-fetch-provider.contract';
 import { Inject } from '@nestjs/common/decorators';
 import { INJECTABLES } from 'shared/injectables';
-import {
-  IDatabaseConnection,
-  IDatabaseConnectionFromSSO,
-} from 'domain/interfaces/database-connection.interface';
+import { IDatabaseConnectionFromSSO } from 'domain/interfaces/database-connection.interface';
 import { Cache } from 'cache-manager';
 import { UsersRepository } from 'infrastructure/database/repositories/knex/users.repository';
-import { getKnexInstance } from 'infrastructure/database/knex';
+import { User, UserCompanyAggregate } from 'domain/entities/user.entity';
+import { Company } from 'domain/entities/company.entity';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -35,11 +33,16 @@ export class JwtAuthGuard implements CanActivate {
       context.getClass(),
     ]);
 
+    // Se não é necessário autenticação, retornar true para a rota executar normalmente
+
     if (isPublic) {
       return true;
     }
 
     const req = context.switchToHttp().getRequest();
+
+    // Validando a formatação do header do token
+
     const tokenHeader = req.headers.authorization;
 
     if (!tokenHeader) throw new UnauthorizedException('MISSING_TOKEN');
@@ -48,43 +51,38 @@ export class JwtAuthGuard implements CanActivate {
 
     if (parts.length !== 2) throw new UnauthorizedException('INVALID_TOKEN');
 
-    const [scheme] = parts;
+    const [scheme, token] = parts;
 
     if (!/^Bearer$/i.test(scheme))
       throw new UnauthorizedException('MALFORMED_TOKEN');
 
+    // Conferindo se o token expirou no SSO
     const userResponse = await this._apiService
-      .post(`${process.env.SSO_URL}/users/token-user`, null, {
-        headers: {
-          Authorization: tokenHeader,
+      .post({
+        url: `${process.env.SSO_URL}/users/token-user`,
+        config: {
+          headers: {
+            Authorization: tokenHeader,
+          },
         },
       })
       .catch(() => {
         throw new UnauthorizedException('GENERIC');
       });
 
-    if (userResponse.status > 299) {
-      throw new UnauthorizedException('GENERIC');
-    }
-
-    type UserResponse = {
-      data: Record<string, string>;
-    };
-
-    const data = {
-      application_name: process.env.APP_NAME,
-      company_id: userResponse.data.company.id as string,
-    };
-
-    const connectionResponse = await this._apiService
-      .post(`${process.env.SSO_URL}/globals/conn-all-companies`, data, {
+    // Obtendo conexão com o banco do usuario para consultar sessions
+    const connectionResponse = await this._apiService.post({
+      url: `${process.env.SSO_URL}/globals/conn-all-companies`,
+      data: {
+        application_name: process.env.APP_NAME,
+        company_id: userResponse.data.company.id,
+      },
+      config: {
         headers: {
           Authorization: tokenHeader,
         },
-      })
-      .catch(() => {
-        throw new UnauthorizedException('GENERIC');
-      });
+      },
+    });
 
     type ConnectionResponse = {
       data: Array<Record<keyof IDatabaseConnectionFromSSO, string>>;
@@ -92,45 +90,40 @@ export class JwtAuthGuard implements CanActivate {
 
     const [connection] = (connectionResponse as ConnectionResponse).data;
 
-    await this._cache.set<IDatabaseConnection>(
-      `${parts[1]}`,
-      {
-        ...connection,
-        database: connection.database_name,
-        user: connection.username,
-        company_id: userResponse.data.company.id as string,
-      },
-      {
-        ttl: 1000 * 60 * 45,
-      },
-    );
+    // Validando se a session deste token foi revogada ou se está ativa
+    const usersRepositoryInstance = new UsersRepository(this._cache, req);
 
-    const usersRepository = new UsersRepository(req, this._cache);
-
-    const dbInstance = await getKnexInstance({
+    usersRepositoryInstance.setKnexInstanceOverride({
       ...connection,
       database: connection.database_name,
       user: connection.username,
       company_id: userResponse.data.company.id as string,
     });
 
-    usersRepository.setKnexInstanceOverride(dbInstance);
+    const session = await usersRepositoryInstance.findSession(token);
 
-    const existingUser = await usersRepository.findByPrimary({
-      email: (userResponse as UserResponse).data.email,
-    });
-
-    usersRepository.clearKnexInstanceOverride();
-    await dbInstance?.destroy?.();
-
-    if (existingUser.token !== parts[1]) {
+    if (!session || session?.expires_at < new Date())
       throw new UnauthorizedException('EXPIRED_SESSION');
-    }
 
-    req.user = {
-      id: existingUser.id,
-      email: (userResponse as UserResponse).data.email,
-    };
+    req.user = new UserCompanyAggregate(
+      new User(
+        userResponse.data.id,
+        userResponse.data.email,
+        userResponse.data.first_name,
+        userResponse.data.last_name,
+        userResponse.data.full_name,
+        token,
+        null,
+      ),
+      new Company(
+        userResponse.data.company.id,
+        userResponse.data.company.name,
+        userResponse.data.company.corpoate_name,
+        userResponse.data.company.patron,
+        userResponse.data.company.cnpj,
+        userResponse.data.company.ie,
+      ),
+    );
 
     return req.user;
   }

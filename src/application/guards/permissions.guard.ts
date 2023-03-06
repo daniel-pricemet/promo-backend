@@ -1,10 +1,22 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  Inject,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ForbiddenException } from 'application/exceptions/generic/forbidden.exception';
+import { IUserProvider } from 'domain/contracts/user-provider.contract';
+import { INJECTABLES } from 'shared/injectables';
+import { GrantsEnum } from 'shared/policies';
 
 @Injectable()
-export class PermissionsGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+export class GrantsGuard implements CanActivate {
+  constructor(
+    private reflector: Reflector,
+    @Inject(INJECTABLES.IUserProvider)
+    private readonly _userProvider: IUserProvider,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.getAllAndOverride<string[]>('roles', [
@@ -17,21 +29,20 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const req = context.switchToHttp().getRequest();
-    const user = req.user;
 
-    return true;
+    const userRolesAsString = this._userProvider.user.roles.map(
+      (role) => role.name,
+    );
 
-    // const userRolesAsString = user.roles.map((role: Role) => role.name);
+    if (userRolesAsString.includes(GrantsEnum.ADMIN)) return true;
 
-    // if (userRolesAsString.includes(RoleEnum.ADMIN)) return true;
+    const hasRole = () =>
+      requiredRoles.every((role) => userRolesAsString.includes(role));
 
-    // const hasRole = () =>
-      // requiredRoles.every((role) => userRolesAsString.includes(role));
+    if (this._userProvider.user && this._userProvider.user.roles && hasRole()) {
+      return true;
+    }
 
-    // if (user && user.roles && hasRole()) {
-      // return true;
-    // }
-
-    // throw new ForbiddenException('GENERIC');
+    throw new ForbiddenException('GENERIC');
   }
 }

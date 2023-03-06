@@ -1,21 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+export type RequestParameters = {
+  url: string;
+  data?: object;
+  config?: object;
+};
+
 export interface IDataFetcherProvider {
   get(
-    url: string,
-    config?: object,
+    params: RequestParameters,
   ): Promise<{ data: unknown; [key: string]: any }>;
-  post(
-    url: string,
-    data?: object,
-    config?: object,
-  ): Promise<{ data: any; [key: string]: any }>;
-  put(
-    url: string,
-    data?: object,
-    config?: object,
-  ): Promise<{ data: any; [key: string]: any }>;
-  delete(
-    url: string,
-    config?: object,
-  ): Promise<{ data: any; [key: string]: any }>;
+  post(params: RequestParameters): Promise<{ data: any; [key: string]: any }>;
+  put(params: RequestParameters): Promise<{ data: any; [key: string]: any }>;
+  delete(params: RequestParameters): Promise<{ data: any; [key: string]: any }>;
 }

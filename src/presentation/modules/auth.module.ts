@@ -6,7 +6,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from 'application/guards/jwt.guard';
 import { DatabaseModule } from './database.module';
 import { ExternalModule } from './external.module';
-import { PermissionsGuard } from 'application/guards/permissions.guard';
+import { GrantsGuard } from 'application/guards/permissions.guard';
 
 @Module({
   imports: [
@@ -23,7 +23,7 @@ import { PermissionsGuard } from 'application/guards/permissions.guard';
     },
     {
       provide: APP_GUARD,
-      useClass: PermissionsGuard,
+      useClass: GrantsGuard,
     },
   ],
   exports: [AuthService],

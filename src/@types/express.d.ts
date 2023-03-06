@@ -1,9 +1,7 @@
 declare namespace Express {
+  import { UserCompanyAggregate } from 'domain/entities/user.entity';
+
   export interface Request {
-    user: {
-      id?: string;
-      email?: string;
-      token?: string;
-    };
+    user: UserCompanyAggregate;
   }
 }

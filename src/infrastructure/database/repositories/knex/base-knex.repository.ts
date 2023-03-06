@@ -8,28 +8,29 @@ import { IDatabaseConnection } from 'domain/interfaces/database-connection.inter
 
 @Injectable()
 export class BaseKnexRepository {
-  private knexInstanceOverride: Knex;
+  private connectionOverride: IDatabaseConnection;
 
   constructor(
-    @Inject(REQUEST) private readonly _request: Request,
     @Inject(CACHE_MANAGER) private readonly _cache: Cache,
+    @Inject(REQUEST) private readonly _request?: Request,
   ) {}
 
   protected async getKnexInstance(): Promise<Knex> {
-    if (this.knexInstanceOverride) return this.knexInstanceOverride;
+    if (this.connectionOverride)
+      return getKnexInstance(this.connectionOverride);
 
-    const token = this._request.headers.authorization.split(' ')[1];
+    const token = this._request?.headers?.authorization?.split?.(' ')?.[1];
 
     const connection = await this._cache.get<IDatabaseConnection>(token);
 
     return getKnexInstance(connection);
   }
 
-  public setKnexInstanceOverride(knexInstance: Knex): void {
-    this.knexInstanceOverride = knexInstance;
+  public setKnexInstanceOverride(connectionInfo: IDatabaseConnection): void {
+    this.connectionOverride = connectionInfo;
   }
 
   public clearKnexInstanceOverride(): void {
-    this.knexInstanceOverride = undefined;
+    this.connectionOverride = undefined;
   }
 }

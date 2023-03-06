@@ -1,4 +1,4 @@
 export class UserByPrimaryDTO {
   email?: string;
-  id?: number;
+  id?: string;
 }

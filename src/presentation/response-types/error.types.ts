@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { IJsonResponse } from 'domain/contracts/json-response.contract';
+import { IJsonResponse } from 'domain/interfaces/json-response.interface';
 
 export const Error = (
   status: number | string,

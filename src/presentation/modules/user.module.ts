@@ -5,14 +5,8 @@ import { DatabaseModule } from './database.module';
 import { ExternalModule } from './external.module';
 
 @Module({
-  imports: [
-    DatabaseModule,
-    ExternalModule,
-    CacheModule.register(),
-  ],
-  providers: [
-    GetUserService,
-  ],
+  imports: [DatabaseModule, ExternalModule, CacheModule.register()],
+  providers: [GetUserService],
   controllers: [UserController],
   exports: [GetUserService],
 })
