@@ -24,24 +24,26 @@ export class GrantsGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredRoles) {
-      return true;
-    }
+    //TODO: Retornando true por padrão, implementar validação de cargos necessários e de usuário logado para liberar acesso
+    return true;
+    // if (!requiredRoles) {
+    //   return true;
+    // }
 
-    const req = context.switchToHttp().getRequest();
+    // const req = context.switchToHttp().getRequest();
 
-    const userRolesAsString = this._userProvider.user.roles.map(
-      (role) => role.name,
-    );
+    // const userRolesAsString = this._userProvider.user.roles.map(
+    //   (role) => role.name,
+    // );
 
-    if (userRolesAsString.includes(GrantsEnum.ADMIN)) return true;
+    // if (userRolesAsString.includes(GrantsEnum.ADMIN)) return true;
 
-    const hasRole = () =>
-      requiredRoles.every((role) => userRolesAsString.includes(role));
+    // const hasRole = () =>
+    //   requiredRoles.every((role) => userRolesAsString.includes(role));
 
-    if (this._userProvider.user && this._userProvider.user.roles && hasRole()) {
-      return true;
-    }
+    // if (this._userProvider.user && this._userProvider.user.roles && hasRole()) {
+    //   return true;
+    // }
 
     throw new ForbiddenException('GENERIC');
   }
