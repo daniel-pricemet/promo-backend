@@ -43,6 +43,7 @@ export class GetUserService {
       userResponse.full_name,
       null,
       userResponse.user_image_base64,
+      null,
     );
   }
 
@@ -69,6 +70,7 @@ export class GetUserService {
         user.full_name,
         null,
         user.user_image_base64,
+        null,
       );
     });
 

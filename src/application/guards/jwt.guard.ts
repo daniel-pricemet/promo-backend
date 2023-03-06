@@ -114,6 +114,7 @@ export class JwtAuthGuard implements CanActivate {
         userResponse.data.full_name,
         token,
         null,
+        null,
       ),
       new Company(
         userResponse.data.company.id,
